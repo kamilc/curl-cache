@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+
+which docopts
+
+if [ "$?" != 0 ]; then
+	echo -e "\u001b[31mPlease install docopts first (https://github.com/docopt/docopts)\u001b[0m\n" >&2
+	echo >&2 "You can grab the binary from the project's release page: https://github.com/docopt/docopts/releases"
+	exit 1
+fi
+
+#? curl-cache 0.1.0
+
+##? Usage: curl-cache [-f] [--progress-bar] -o <out> <url>
+##?
+##? Options:
+##?       --help     Show help options.
+##?       --version  Print program version.
+
+help=$(grep "^##?" "$0" | cut -c 5-)
+version=$(grep "^#?" "$0" | cut -c 4-)
+eval "$(docopts -A args -h "$help" -V "$version" : "$@")"
+
+OUT=${args["<out>"]}
+URL=${args["<url>"]}
+FAIL_OPT=""
+PROGRESS_OPT=""
+
+if [ -z ${args["-f"]} ]; then
+	FAIL_OPT="-f"
+fi
+
+if [ ${args["--progress-bar"]} ]; then
+	PROGRESS_OPT="--progress-bar"
+fi
+
+CACHE_DIR="$HOME/.curl-cache"
+
+if [ ! -d "$CACHE_DIR" ]; then
+	mkdir "$CACHE_DIR"
+fi
+
+CACHE_FILE="$CACHE_DIR/$(echo "$OUT $URL" | md5sum | cut -d' ' -f1).cache"
+
+function copy_from_cache {
+	cp "$CACHE_FILE" "$OUT"
+}
+
+function download_file {
+	curl -L -O --retry 99 $FAIL_OPT $PROGRESS_OPT -o "$CACHE_FILE" "$URL"
+
+	if [ $? != 0 ]; then
+		exit 1
+		download_file
+	else
+		copy_from_cache
+	fi
+}
+
+if [ -f "$CACHE_FILE" ]; then
+	copy_from_cache
+else
+	download_file
+fi
