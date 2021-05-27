@@ -46,7 +46,7 @@ function copy_from_cache {
 }
 
 function download_file {
-	curl -L -O --retry 99 $FAIL_OPT $PROGRESS_OPT -o "$CACHE_FILE" "$URL"
+	curl -L -C --retry 99 $FAIL_OPT $PROGRESS_OPT -o "$CACHE_FILE" "$URL"
 
 	if [ $? != 0 ]; then
 		exit 1
