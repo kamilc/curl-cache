@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-which docopts
+DOCOPTS=$(which docopts)
 
 if [ "$?" != 0 ]; then
 	echo -e "\u001b[31mPlease install docopts first (https://github.com/docopt/docopts)\u001b[0m\n" >&2
@@ -46,12 +46,12 @@ function copy_from_cache {
 }
 
 function download_file {
-	curl -L -C --retry 99 $FAIL_OPT $PROGRESS_OPT -o "$CACHE_FILE" "$URL"
+	curl -L -C - --retry 99 --retry-connrefused $FAIL_OPT $PROGRESS_OPT -o "$CACHE_FILE.download" "$URL"
 
 	if [ $? != 0 ]; then
-		exit 1
 		download_file
 	else
+		mv "$CACHE_FILE.download" "$CACHE_FILE"
 		copy_from_cache
 	fi
 }
